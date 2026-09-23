@@ -1,9 +1,638 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Deploy, Diagnose, Repair</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Deploy, Diagnose, Repair — Iterative Policy Improvement for Fine-Grained Twisting</title>
+<meta name="description" content="Project page for 'Deploy, Diagnose, Repair: Iterative Policy Improvement for Fine-Grained Twisting in Real-World Dexterous Manipulation' (ICRA 2027 submission). Real-robot videos, method overview, and results.">
+<style>
+  :root {
+    --bg: #ffffff;
+    --bg-soft: #f6f7f9;
+    --card: #ffffff;
+    --text: #1c2430;
+    --muted: #5b6675;
+    --accent: #0b66c3;
+    --accent-soft: #e8f1fb;
+    --border: #e3e7ec;
+    --shadow: 0 1px 3px rgba(16, 24, 40, .08), 0 8px 24px rgba(16, 24, 40, .06);
+    --radius: 14px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #12161c;
+      --bg-soft: #171c24;
+      --card: #1b2129;
+      --text: #e8ecf1;
+      --muted: #9aa5b1;
+      --accent: #6cb1f5;
+      --accent-soft: #1d2a3a;
+      --border: #2a323d;
+      --shadow: 0 1px 3px rgba(0, 0, 0, .4), 0 8px 24px rgba(0, 0, 0, .3);
+    }
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.65;
+    -webkit-font-smoothing: antialiased;
+  }
+  .container { max-width: 980px; margin: 0 auto; padding: 0 20px; }
+
+  /* ---------- nav ---------- */
+  nav {
+    position: sticky; top: 0; z-index: 50;
+    background: color-mix(in srgb, var(--bg) 86%, transparent);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--border);
+  }
+  nav .container { display: flex; align-items: center; justify-content: space-between; height: 52px; }
+  nav .brand { font-weight: 700; font-size: .95rem; text-decoration: none; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  nav .links { display: flex; gap: 18px; }
+  nav .links a { color: var(--muted); text-decoration: none; font-size: .9rem; }
+  nav .links a:hover { color: var(--accent); }
+  @media (max-width: 640px) { nav .links { display: none; } }
+
+  /* ---------- header ---------- */
+  header { padding: 56px 0 8px; text-align: center; }
+  .venue-chip {
+    display: inline-block; padding: 3px 12px; border-radius: 999px;
+    background: var(--accent-soft); color: var(--accent);
+    font-size: .82rem; font-weight: 600; letter-spacing: .02em; margin-bottom: 18px;
+  }
+  h1 { font-size: clamp(1.45rem, 3.4vw, 2.15rem); line-height: 1.3; margin: 0 0 18px; }
+  .authors { color: var(--muted); font-size: 1rem; margin-bottom: 6px; }
+  .affil { color: var(--muted); font-size: .92rem; }
+  .badges { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; margin: 22px 0 8px; }
+  .badge {
+    display: inline-flex; align-items: center; gap: 7px;
+    padding: 8px 16px; border-radius: 10px; text-decoration: none;
+    background: var(--accent); color: #fff; font-weight: 600; font-size: .92rem;
+    box-shadow: var(--shadow); transition: transform .12s ease, opacity .12s ease;
+  }
+  .badge:hover { transform: translateY(-1px); }
+  .badge.ghost { background: var(--card); color: var(--text); border: 1px solid var(--border); }
+  .badge.tba { opacity: .75; cursor: default; }
+
+  /* ---------- sections ---------- */
+  section { padding: 34px 0; }
+  h2 { font-size: 1.5rem; margin: 0 0 18px; }
+  h2 .sec-tag { color: var(--accent); font-weight: 700; margin-right: 8px; }
+  h3 { font-size: 1.12rem; margin: 26px 0 10px; }
+  p { margin: 0 0 14px; }
+  .muted { color: var(--muted); }
+  figure { margin: 22px 0; text-align: center; }
+  figure img { max-width: 100%; height: auto; border-radius: 10px; border: 1px solid var(--border); background: #fff; }
+  figcaption { color: var(--muted); font-size: .9rem; text-align: left; margin-top: 10px; line-height: 1.55; }
+  figcaption b { color: var(--text); }
+  .framed { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow); padding: 18px; }
+
+  /* ---------- stat cards ---------- */
+  .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 14px; margin: 8px 0 6px; }
+  .stat {
+    background: var(--card); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 18px 16px; box-shadow: var(--shadow);
+  }
+  .stat .num { font-size: 1.5rem; font-weight: 800; color: var(--accent); line-height: 1.2; }
+  .stat .lbl { color: var(--muted); font-size: .86rem; margin-top: 6px; }
+
+  /* ---------- condition cards ---------- */
+  .cards3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 14px; }
+  .cond {
+    background: var(--card); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 18px; box-shadow: var(--shadow);
+  }
+  .cond .icon { font-size: 1.4rem; }
+  .cond b { display: block; margin: 6px 0 4px; }
+  .cond p { color: var(--muted); font-size: .92rem; margin: 0; }
+
+  /* ---------- loop stages ---------- */
+  .stages { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin-top: 16px; counter-reset: stage; }
+  .stage {
+    background: var(--bg-soft); border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px;
+  }
+  .stage::before {
+    counter-increment: stage; content: "Stage " counter(stage);
+    display: block; font-size: .75rem; font-weight: 700; letter-spacing: .08em;
+    text-transform: uppercase; color: var(--accent); margin-bottom: 4px;
+  }
+  .stage b { display: block; margin-bottom: 3px; }
+  .stage p { color: var(--muted); font-size: .88rem; margin: 0; }
+
+  /* ---------- iteration timeline ---------- */
+  .iters { display: grid; grid-template-columns: 1fr; gap: 12px; margin-top: 16px; counter-reset: iter; }
+  @media (min-width: 760px) { .iters { grid-template-columns: 1fr 1fr; } }
+  .iter {
+    background: var(--bg-soft); border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px;
+  }
+  .iter::before {
+    counter-increment: iter; content: "Iteration " counter(iter);
+    display: block; font-size: .75rem; font-weight: 700; letter-spacing: .08em;
+    text-transform: uppercase; color: var(--accent); margin-bottom: 4px;
+  }
+  .iter b { display: block; margin-bottom: 3px; }
+  .iter p { color: var(--muted); font-size: .88rem; margin: 0; }
+
+  /* ---------- videos ---------- */
+  .video-hero {
+    position: relative; width: 100%; aspect-ratio: 16 / 9;
+    border-radius: var(--radius); overflow: hidden;
+    border: 1px solid var(--border); background: var(--bg-soft); box-shadow: var(--shadow);
+  }
+  .video-hero video, .video-hero iframe { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; background: #000; }
+  .video-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; margin-top: 16px; }
+  .video-card {
+    background: var(--card); border: 1px solid var(--border); border-radius: var(--radius);
+    overflow: hidden; box-shadow: var(--shadow);
+  }
+  .video-card .vid { position: relative; aspect-ratio: 16 / 9; background: var(--bg-soft); }
+  .video-card video, .video-card iframe { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; background: #000; }
+  .video-card .cap { padding: 11px 14px; font-size: .88rem; color: var(--muted); }
+  .video-card .cap b { color: var(--text); display: block; margin-bottom: 2px; }
+
+  .placeholder {
+    position: absolute; inset: 0; display: flex; flex-direction: column; gap: 6px;
+    align-items: center; justify-content: center; text-align: center; padding: 16px;
+    border: 2px dashed var(--border); border-radius: 0; color: var(--muted); font-size: .9rem;
+    background: repeating-linear-gradient(45deg, transparent, transparent 12px, color-mix(in srgb, var(--border) 30%, transparent) 12px, color-mix(in srgb, var(--border) 30%, transparent) 24px);
+  }
+  .placeholder .play {
+    width: 52px; height: 52px; border-radius: 50%;
+    background: var(--accent-soft); color: var(--accent);
+    display: flex; align-items: center; justify-content: center; font-size: 1.35rem;
+  }
+
+  /* ---------- cycle strip ---------- */
+  .cycle { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; }
+  .cycle figure { margin: 0; }
+  .cycle img { aspect-ratio: 1 / 1; object-fit: cover; width: 100%; border-radius: 10px; }
+  .cycle figcaption { text-align: center; font-size: .8rem; margin-top: 6px; }
+  .cycle .step { color: var(--accent); font-weight: 700; }
+
+  /* ---------- platform ---------- */
+  .platform { display: grid; grid-template-columns: 1.1fr .9fr; gap: 20px; align-items: start; }
+  @media (max-width: 760px) { .platform { grid-template-columns: 1fr; } }
+  .speclist { list-style: none; padding: 0; margin: 0; }
+  .speclist li { padding: 9px 0; border-bottom: 1px solid var(--border); font-size: .95rem; }
+  .speclist li:last-child { border-bottom: none; }
+  .speclist b { color: var(--accent); }
+
+  /* ---------- table ---------- */
+  .tablewrap { overflow-x: auto; }
+  table.results { width: 100%; border-collapse: collapse; font-size: .9rem; }
+  table.results th, table.results td { text-align: left; padding: 9px 10px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  table.results th { color: var(--muted); font-weight: 600; font-size: .8rem; text-transform: uppercase; letter-spacing: .05em; }
+  table.results td.dec { white-space: nowrap; font-weight: 600; }
+  .pill { display: inline-block; padding: 2px 9px; border-radius: 999px; font-size: .76rem; font-weight: 700; }
+  .pill.ok { background: var(--accent-soft); color: var(--accent); }
+  .pill.no { background: color-mix(in srgb, var(--muted) 15%, transparent); color: var(--muted); }
+  .pill.ref { background: transparent; color: var(--muted); }
+  tr.group td { background: var(--bg-soft); font-weight: 700; font-size: .82rem; letter-spacing: .04em; text-transform: uppercase; color: var(--muted); }
+
+  /* ---------- bibtex ---------- */
+  pre.bib {
+    background: var(--bg-soft); border: 1px solid var(--border); border-radius: 12px;
+    padding: 16px 18px; overflow-x: auto; font-size: .84rem; line-height: 1.5;
+  }
+
+  footer { border-top: 1px solid var(--border); padding: 26px 0 40px; color: var(--muted); font-size: .86rem; }
+</style>
 </head>
 <body>
-    <h1>Deploy, Diagnose, Repair</h1>
+
+<nav>
+  <div class="container">
+    <a class="brand" href="#top">Deploy · Diagnose · Repair</a>
+    <div class="links">
+      <a href="#videos">Videos</a>
+      <a href="#abstract">Abstract</a>
+      <a href="#approach">Approach</a>
+      <a href="#platform">Hardware</a>
+      <a href="#results">Results</a>
+      <a href="#bibtex">BibTeX</a>
+    </div>
+  </div>
+</nav>
+
+<!-- ================================================================
+     HEADER — fill in real author list / affiliation after acceptance,
+     and set the paper + code links in the badge row below (two TODOs).
+     ================================================================ -->
+<header id="top">
+  <div class="container">
+    <span class="venue-chip">ICRA 2027 · Under Review</span>
+    <h1>Deploy, Diagnose, Repair: Iterative Policy Improvement
+        for Fine-Grained Twisting in Real-World Dexterous Manipulation</h1>
+    <p class="authors">Anonymous Author(s)</p>
+    <p class="affil">Submitted to ICRA, under review</p>
+
+    <div class="badges">
+      <!-- TODO(链接占位 1)：论文/arXix 上线后替换 href，例如 https://arxiv.org/abs/XXXX.XXXXX -->
+      <a class="badge tba" href="#" onclick="return false" title="Paper link coming soon">📄 Paper</a>
+      <!-- TODO(链接占位 2)：如需代码仓库，替换 href -->
+      <a class="badge ghost tba" href="#" onclick="return false" title="Code link coming soon">💻 Code</a>
+      <a class="badge ghost" href="#videos">🎬 Videos</a>
+      <a class="badge ghost" href="#bibtex">📝 BibTeX</a>
+    </div>
+  </div>
+</header>
+
+<main class="container">
+
+  <!-- ============ HERO FIGURE ============ -->
+  <figure class="framed">
+    <img src="assets/hero.png" alt="The knob-manipulation platform and its control loop">
+    <figcaption>
+      <b>The knob-manipulation platform and its control loop.</b>
+      (a) A five-fingered hand operates a knob on an unlimited-rotation axis, and an on-axis sensor streams the
+      knob angle to the host computer. (b) The angle stream feeds policy feedback and criterion evaluation; every
+      command passes a fail-closed reference-likelihood gate. (c) Hardware episode of the final policy: in the
+      episode's final turn-and-hold primitive, the knob reaches the band around a held-out target at decision 176
+      and holds it for 1&nbsp;s. (d) One hardware operation cycle.
+    </figcaption>
+  </figure>
+
+  <!-- ================================================================
+       VIDEO SLOTS
+       使用方法（中文说明，发布前删除本注释块亦可）：
+       1. 把 .mp4 文件放进 website/videos/（同一目录下有 README 说明）。
+       2. 每个槽位下方已备好注释掉的 <video> 标签：取消注释、把 src 换成
+          "videos/你的文件.mp4"，并保存页面即可；占位层会自动隐藏。
+       3. 若托管在 Bilibili / YouTube，用 <iframe> 替换 <video>，
+          尺寸已由外层容器自适应。
+       ================================================================ -->
+  <section id="videos">
+    <h2><span class="sec-tag">▶</span>Videos</h2>
+    <p class="muted">Real-robot hardware recordings of the knob-twisting policy. Every clip below is executed
+       on the physical five-fingered hand; success is read from the on-axis angle sensor.</p>
+
+    <!-- featured slot -->
+    <div class="video-hero" data-videoslot>
+      <div class="placeholder">
+        <div class="play">▶</div>
+        <div><b>Deploy, Diagnose, Repair — paper overview video</b><br>
+        narrated hardware footage of the deployed policy and the loop's iterations</div>
+      </div>
+      <video controls preload="metadata" src="videos/paper_video.mp4" poster="assets/hero.png"></video>
+    </div>
+
+    <div class="video-grid">
+      <div class="video-card" data-videoslot>
+        <div class="vid">
+          <div class="placeholder"><div class="play">▶</div><div>Initial deployment — the goal-blind pretrained policy</div></div>
+          <!-- <video controls preload="metadata" src="videos/baseline_negative.mp4"></video> -->
+        </div>
+        <div class="cap"><b>Initial deployment</b>
+          The pretrained policy turns positive on negative sub-goals and over-rotates the positive ones:
+          2/30 on the ten-target pool, 0/15 on negative targets.</div>
+      </div>
+
+      <div class="video-card" data-videoslot>
+        <div class="vid">
+          <div class="placeholder"><div class="play">▶</div><div>Iteration 2 — per-sign seed-target repair</div></div>
+          <!-- <video controls preload="metadata" src="videos/iter2_repair.mp4"></video> -->
+        </div>
+        <div class="cap"><b>Iteration-2 repair</b>
+          Direction-correct supervision synthesized at the failure states clears the sign-specific failure
+          with zero safety faults (17/30, negative 8/15).</div>
+      </div>
+
+      <div class="video-card" data-videoslot>
+        <div class="vid">
+          <div class="placeholder"><div class="play">▶</div><div>Iteration 3 — self-imitation at a held-out magnitude</div></div>
+          <!-- <video controls preload="metadata" src="videos/iter3_heldout.mp4"></video> -->
+        </div>
+        <div class="cap"><b>Iteration-3 repair</b>
+          The policy's own gate-passing recorded actions supervise mid-episode states; at the held-out
+          magnitude −0.36 the knob sweeps monotonically into the band (23/30, negative 12/15).</div>
+      </div>
+
+      <div class="video-card" data-videoslot>
+        <div class="vid">
+          <div class="placeholder"><div class="play">▶</div><div>One hardware operation cycle</div></div>
+          <!-- <video controls preload="metadata" src="videos/operation_cycle.mp4"></video> -->
+        </div>
+        <div class="cap"><b>Operation cycle</b>
+          Turn-and-hold, release, reset, and recontact — the scripted macro stitches primitives between
+          turn-and-hold sub-goals.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ ABSTRACT ============ -->
+  <section id="abstract">
+    <h2><span class="sec-tag">§</span>Abstract</h2>
+    <div class="framed">
+      <p>Deployment is not the end of dexterous policy improvement; it is where real-world improvement begins.
+      Deployment exposes residual failure modes under three hardware conditions. Actions are irreversible,
+      data collection is single-body, and no expert is available at failure states. We present the
+      deploy–diagnose–repair (DDR) loop for iterative policy improvement under these conditions. Deploy executes
+      every command through a fail-closed reference-likelihood gate and records each decision for offline replay.
+      Diagnose attributes failures to mechanisms through interventions on recorded experience. Repair either
+      synthesizes corrective supervision from hardware-certified actions or triggers targeted data collection
+      according to repairability. Repairability is judged in two steps, attribution and material. We evaluate DDR
+      on contact-rich knob twisting with a five-fingered hand. Success is the knob angle reaching the ±0.05-rad
+      band around the commanded target, and holding for 1&nbsp;s. A per-sign repair clears the goal-conditioned
+      baseline's direction-specific failure on negative targets, a reference-likelihood screen admits a
+      self-imitation repair before additional hardware interaction, and guard-side repairs bound the residual.
+      The resulting policy scores 87/90 mixed-sign success with 44/45 negative targets, at a half-band 126×
+      finer than the full-rotation granularity of prior twist-family evaluations.</p>
+    </div>
+  </section>
+
+  <!-- ============ APPROACH ============ -->
+  <section id="approach">
+    <h2><span class="sec-tag">§</span>Approach: The Deploy–Diagnose–Repair Loop</h2>
+    <p>A policy that performs well during training can still fail under the physical conditions of deployment.
+       Improving a deployed policy differs from pre-deployment training because real-robot deployment imposes
+       three conditions:</p>
+
+    <div class="cards3">
+      <div class="cond"><span class="icon">⚠️</span><b>Irreversible actions</b>
+        <p>An out-of-distribution action can damage the scene or the robot, so every command is certified
+        before execution and the step aborts fail-closed otherwise.</p></div>
+      <div class="cond"><span class="icon">🤖</span><b>Single-body data collection</b>
+        <p>One physical robot yields one episode stream (B&thinsp;=&thinsp;1) within a finite per-session
+        hardware budget, so diagnosis proceeds offline from recorded experience.</p></div>
+      <div class="cond"><span class="icon">🚫</span><b>No expert at the failure states</b>
+        <p>The states where the policy fails lie off the demonstrated manifold, so corrective supervision must
+        be synthesized from certified experience, not teleoperated.</p></div>
+    </div>
+
+    <figure class="framed">
+      <img src="assets/loop.png" alt="The deploy–diagnose–repair loop" style="max-width:560px">
+      <figcaption>
+        <b>The deploy–diagnose–repair loop over the certified record.</b>
+        The deploy row shows four keyframes of one hardware turn. The collection node summarizes targeted
+        collection, the scripted macro gathering new episodes at the failure states on hardware.
+      </figcaption>
+    </figure>
+
+    <div class="stages">
+      <div class="stage"><b>Deploy</b><p>Three-phase training on a shared actor–critic–predictor architecture,
+        then gated, fail-closed execution on hardware. Every command is certified against the reference-supported
+        set; every decision is recorded with provenance, so every episode replays offline.</p></div>
+      <div class="stage"><b>Diagnose</b><p>Interventional attribution on recorded observations — goal flips,
+        history ablation, counterfactual command replay — localizes the failure mechanism. Interventions, not
+        correlations, carry the method.</p></div>
+      <div class="stage"><b>Repair</b><p>Repairability routes each failure: synthesis from hardware-certified
+        actions when the recorded experience holds corrective material, targeted collection when it does not.</p></div>
+      <div class="stage"><b>Accept</b><p>Candidates pass a pre-hardware reference-likelihood screen at recorded
+        mid-episode states, then a preregistered hardware A/B with fixed episode counts and an invalidation rule.
+        Accepted experience returns to the next iteration's training as a change of data only.</p></div>
+    </div>
+
+    <figure class="framed">
+      <img src="assets/architecture.png" alt="Training pipeline and execution gate" style="max-width:480px">
+      <figcaption>
+        <b>The deployed policy's training pipeline and execution gate.</b>
+        A shared architecture of flow actor, Critic ensemble, value network, and angle predictor serves all
+        three phases: offline pretraining with the true knob angle, online fine-tuning first with the true angle
+        in the loop, then reading the frozen predictor's rolling predictions. At deployment the knob-angle input
+        is masked and every command passes the reference-likelihood gate.
+      </figcaption>
+    </figure>
+
+    <h3>Repairability: attribution + material</h3>
+    <p>Repairability is judged in two steps, attribution and material, over three components — the policy, the
+       scripted macro, and the guard. The attribution decides which component caused the failure; the repair
+       material available there determines whether the repair succeeds. For the policy's component, the test is
+       a data-coverage property: at the failure states, the reference-supported set holds the actions the
+       deploy-time gate would certify — under the repair constraint, also the only actions usable as supervision
+       targets there. If the intersection between corrective actions and this set is non-empty, repair proceeds
+       from recorded experience; if it is empty, no training on the same data can produce a behavior no label
+       exhibits, and the loop routes to targeted collection — before training is spent.</p>
+  </section>
+
+  <!-- ============ HARDWARE ============ -->
+  <section id="platform">
+    <h2><span class="sec-tag">⚙</span>Hardware Platform</h2>
+    <div class="platform">
+      <figure class="framed" style="margin:0">
+        <img src="assets/hardware_overall.jpeg" alt="Hardware platform: five-fingered hand operating a knob">
+        <figcaption>The physical platform: a five-fingered hand operating a knob on an unlimited-rotation axis,
+        with an on-axis absolute magnetic sensor reading the angle.</figcaption>
+      </figure>
+      <ul class="speclist">
+        <li><b>Hand</b> — TESOLLO DG-5F, 20 joints (12 controlled)</li>
+        <li><b>Task</b> — fine-grained twisting to commanded signed target angles, relative to episode start</li>
+        <li><b>Sensing</b> — single-turn absolute magnetic angle sensor, unwrapped across zero crossing</li>
+        <li><b>Control</b> — one target joint-position command per decision at 100&thinsp;Hz; six most recent
+            samples stacked</li>
+        <li><b>Observation</b> — hand proprioception (positions, velocities, currents), executed commands, knob
+            angle &amp; velocity, sub-goal, signed remaining rotation</li>
+        <li><b>Policy</b> — RealNVP-style flow actor with goal-conditioned base; IQL critic (51-bin categorical);
+            three-phase training at B&thinsp;=&thinsp;1 with RLPD-style replay mixing</li>
+        <li><b>Deployment mode</b> — the knob-angle input is masked; the frozen angle predictor's rolling
+            prediction and sign class judge primitive termination</li>
+        <li><b>Safety</b> — fail-closed reference-likelihood gate on every command, 1-rad/s cumulative-travel
+            clamp, sensor-health guards; every recorded fault caught before damage</li>
+      </ul>
+    </div>
+
+    <h3>One hardware operation cycle</h3>
+    <div class="cycle">
+      <figure><img src="assets/cycle_1_initial.jpeg" alt="Initial grasp"><figcaption><span class="step">1</span> Initial</figcaption></figure>
+      <figure><img src="assets/cycle_2_contact.jpeg" alt="Contact"><figcaption><span class="step">2</span> Contact</figcaption></figure>
+      <figure><img src="assets/cycle_3_turn_and_hold.jpeg" alt="Turn and hold"><figcaption><span class="step">3</span> Turn &amp; hold</figcaption></figure>
+      <figure><img src="assets/cycle_4_release.jpeg" alt="Release"><figcaption><span class="step">4</span> Release</figcaption></figure>
+      <figure><img src="assets/cycle_5_reset.jpeg" alt="Reset"><figcaption><span class="step">5</span> Reset</figcaption></figure>
+      <figure><img src="assets/cycle_6_recontact.jpeg" alt="Recontact"><figcaption><span class="step">6</span> Recontact</figcaption></figure>
+    </div>
+  </section>
+
+  <!-- ============ RESULTS ============ -->
+  <section id="results">
+    <h2><span class="sec-tag">§</span>Results</h2>
+
+    <div class="stats">
+      <div class="stat"><div class="num">87/90</div><div class="lbl">whole-task mixed-sign success under the
+        ±0.05-rad band with 1&thinsp;s hold — 44/45 on negative targets</div></div>
+      <div class="stat"><div class="num">495/495</div><div class="lbl">primitive-level turn-and-hold sub-goals
+        at the 0.3-s hold (269/269 negative)</div></div>
+      <div class="stat"><div class="num">±0.05 rad</div><div class="lbl">commanded-angle band — a half-band 126×
+        finer than the full-rotation granularity of prior twist-family evaluations</div></div>
+      <div class="stat"><div class="num">2/30 → 87/90</div><div class="lbl">the per-iteration record across the
+        loop's four iterations on the ten-target pool</div></div>
+      <div class="stat"><div class="num">0</div><div class="lbl">teleoperated corrections — every repair is
+        synthesized from hardware-certified actions or collected by the scripted macro</div></div>
+      <div class="stat"><div class="num">64.5% → 8.6%</div><div class="lbl">lateral-reversal primitives under the
+        accepted guard repair; macro recontact failures removed, 7/10 → 0/10</div></div>
+    </div>
+
+    <h3>The loop's four iterations on hardware</h3>
+    <div class="iters">
+      <div class="iter"><b>The goal-blind actor</b>
+        <p>The initial flow uses a goal-agnostic base and never reads the goal slot: sweeping the goal moves the
+        dominant drive joint by ~8% and never flips its sign. The deployed repair swaps in a goal-conditioned
+        base distribution, retrained on the same record with no new supervision — frozen episodes at ±2.08&nbsp;rad
+        targets reverse the knob's direction with zero safety faults.</p></div>
+      <div class="iter"><b>The history imitator</b>
+        <p>The offline goal-sweep probe had passed, but the goal-flip intervention overturns it: flipping the goal
+        sign moves the drive joint by only ≈0.03&nbsp;rad, while ablating the action history flips the response.
+        The per-sign seed-target repair supervises the failure states directly with gate-passing, direction-correct
+        actions and clears the failure with zero safety faults.</p></div>
+      <div class="iter"><b>Likelihood-guided repair selection</b>
+        <p>The offline-strongest multi-value variant is falsified on hardware at 0/20; the label-copy variant is
+        withdrawn by the pre-hardware screen. The deployed repair is self-imitation of the policy's own
+        gate-passing recorded actions. A registered retraining study shows returning session data corrupts the
+        angle predictor's direction head, not the actor.</p></div>
+      <div class="iter"><b>The repairability boundary</b>
+        <p>At the policy's 4,453 excursion states the mode action is wrong-direction everywhere yet below the
+        reference threshold (0/4453): the NLL screen is structurally blind, and no synthesis source crosses the
+        direction gate. Repair routes to targeted collection; the loop closes at the guard — a reverse-step clamp
+        then a registered lateral-monotonic constraint — and at the macro's stitch-level fix.</p></div>
+    </div>
+
+    <h3>Final policy evaluation</h3>
+    <div class="tablewrap framed">
+      <table class="results">
+        <thead><tr><th>Evaluation level</th><th>Targets</th><th>n</th><th>Hold</th><th>Success</th></tr></thead>
+        <tbody>
+          <tr class="group"><td colspan="5">Primitive level, single sub-goals</td></tr>
+          <tr><td>Turn-and-hold sub-goals</td><td>mixed-sign</td><td>495</td><td>0.3&thinsp;s</td><td>495/495</td></tr>
+          <tr><td>Turn-and-hold sub-goals</td><td>negative</td><td>269</td><td>0.3&thinsp;s</td><td>269/269</td></tr>
+          <tr class="group"><td colspan="5">Whole task, macro</td></tr>
+          <tr><td>Full commanded targets</td><td>mixed-sign</td><td>90</td><td>1&thinsp;s</td><td>87/90</td></tr>
+          <tr><td>Full commanded targets</td><td>negative</td><td>45</td><td>1&thinsp;s</td><td>44/45</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="muted" style="font-size:.88rem">The recorded iterations are scored on a mixed-sign pool of ten
+    targets spanning −0.45 to +0.377&nbsp;rad under the 1&nbsp;s in-band hold:</p>
+    <div class="tablewrap framed">
+      <table class="results">
+        <thead><tr><th>Policy</th><th>Success</th><th>Negative-target</th></tr></thead>
+        <tbody>
+          <tr><td>π₀, pretrained offline</td><td>2/30</td><td>0/15</td></tr>
+          <tr><td>Iteration-1 base (goal-conditioned base)</td><td>9/30</td><td>1/15</td></tr>
+          <tr><td>Iteration-2 repair (per-sign seed-target)</td><td>17/30</td><td>8/15</td></tr>
+          <tr><td>Iteration-3 repair (self-imitation)</td><td>23/30</td><td>12/15</td></tr>
+          <tr><td>Iteration-4 final</td><td>87/90</td><td>44/45</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>Registered comparisons decided off the main path</h3>
+    <div class="tablewrap framed">
+      <table class="results">
+        <thead><tr><th>Comparison</th><th>Result</th><th>Decision</th></tr></thead>
+        <tbody>
+          <tr><td>Online fine-tuning vs. frozen baseline (18 episodes/variant)</td>
+              <td>no significant gain; held-out error of the most probable action stays flat</td>
+              <td class="dec"><span class="pill no">not adopted</span></td></tr>
+          <tr><td>Multi-value seed sweep, the offline-strongest variant</td>
+              <td>falsified on hardware at 0/20</td>
+              <td class="dec"><span class="pill no">falsified</span></td></tr>
+          <tr><td>Label-copy variant</td>
+              <td>withdrawn by the pre-hardware screen: 80.8% of supervised states above the deploy threshold</td>
+              <td class="dec"><span class="pill no">withdrawn</span></td></tr>
+          <tr><td>Drift-controlled cloning at the boundary (3 registered draws)</td>
+              <td>wrong-direction fraction moves at most one percentage point against the 0.500 requirement</td>
+              <td class="dec"><span class="pill no">rejected</span></td></tr>
+          <tr><td>Scripted pull-back candidate</td>
+              <td>follows its labels at supervised states, fails the same direction gate at the excursion states
+                  the trigger never reached (wrong-direction 0.995–0.999)</td>
+              <td class="dec"><span class="pill no">rejected</span></td></tr>
+          <tr><td>Guard: reverse-step clamp</td>
+              <td>zero effective excursions across 170 negative-motion primitives</td>
+              <td class="dec"><span class="pill ok">accepted</span></td></tr>
+          <tr><td>Guard: lateral-monotonic constraint (registered A/B)</td>
+              <td>lateral-reversal primitives 64.5% → 8.6%</td>
+              <td class="dec"><span class="pill ok">accepted</span></td></tr>
+          <tr><td>Scripted-macro stitch fix (policy untouched)</td>
+              <td>recontact init-failed 7/10 → 0/10</td>
+              <td class="dec"><span class="pill ok">class removed</span></td></tr>
+          <tr><td>Retraining with session data (28,302 → 68,112 transitions, 3 seeds)</td>
+              <td>direction head collapses from the first retraining epoch on every seed; actor holds parity on
+                  every held-out metric (registered pure-BC control, 5 seeds)</td>
+              <td class="dec"><span class="pill no">excluded</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <figure class="framed">
+      <img src="assets/traces.png" alt="Knob twist angle traces across stages">
+      <figcaption>
+        <b>Knob twist angle on negative targets</b>, zeroed at policy onset. The shaded band is ±0.05&nbsp;rad
+        around the dashed target. (a) Frozen goal-conditioned baseline, target −0.18: the knob turns the wrong
+        way to +0.76&nbsp;rad and stalls into timeout. (b) The Iteration-2 repair reaches the band at decision 11.
+        (c) The Iteration-3 repair, held-out magnitude −0.36, reaches the band at decision 40.
+      </figcaption>
+    </figure>
+
+    <figure class="framed">
+      <img src="assets/boundary.png" alt="The repairability boundary">
+      <figcaption>
+        <b>The repairability boundary at the deployed policy's excursion states.</b>
+        (a) The most probable action's reference surprisal lies entirely below the deploy threshold.
+        (b) Its turn component is wrong-direction at essentially every state, mean −0.21. (c) Counterfactual
+        label synthesis against the direction-gate requirement: no source crosses it, nearest-neighbor copy at
+        0.74%.
+      </figcaption>
+    </figure>
+
+    <h3>Validations</h3>
+    <div class="video-grid">
+      <div class="video-card">
+        <div class="vid" style="aspect-ratio:auto;background:var(--card)">
+          <img src="assets/qgap.png" alt="The q-gap probe across actor–critic variants" style="width:100%;height:auto">
+        </div>
+        <div class="cap"><b>The q-gap probe</b>
+          Over seeds 7/11/13, one Critic per variant: negative values mean OOD probe actions are valued below
+          data actions. IQL sits in the intermediate, structurally safe band between CQL's aggressive separation
+          and BC's unconstrained Critic. A tanh-Gaussian actor swap matches the flow on every safety metric, so
+          the screens are representation agnostic.</div>
+      </div>
+      <div class="video-card">
+        <div class="vid" style="aspect-ratio:auto;background:var(--card)">
+          <img src="assets/pretrain.png" alt="Phase-1 offline pretraining curves" style="width:100%;height:auto">
+        </div>
+        <div class="cap"><b>Phase-1 offline pretraining</b>
+          Early stops at epochs 4/5/2. The actor behavior NLL drops from +10.4–+13.9 nats at init to
+          −32.2–−31.0 nats within the first epoch; the angle predictor's direction head settles into the
+          0.86–0.89 band, the control band the retraining analysis quotes.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ BIBTEX ============ -->
+  <section id="bibtex">
+    <h2><span class="sec-tag">¶</span>BibTeX</h2>
+    <pre class="bib"><code>@inproceedings{anonymous2027ddr,
+  title     = {Deploy, Diagnose, Repair: Iterative Policy Improvement for
+               Fine-Grained Twisting in Real-World Dexterous Manipulation},
+  author    = {Anonymous},
+  booktitle = {Proceedings of the IEEE International Conference on
+               Robotics and Automation (ICRA)},
+  year      = {2027},
+  note      = {Under review}
+}</code></pre>
+  </section>
+
+</main>
+
+<footer>
+  <div class="container">
+    Template-free, dependency-free static page — serve the <code>website/</code> directory with any static host.
+    All quantitative claims are from physical-hardware runs of the platform.
+    <!-- TODO(链接占位 3)：需要联系邮箱/项目组主页时在此追加 -->
+  </div>
+</footer>
+
+<script>
+  // Hide the dashed placeholder of any video slot whose <video>/<iframe> has a src.
+  document.querySelectorAll('[data-videoslot]').forEach(function (slot) {
+    var media = slot.querySelector('video[src], iframe[src]');
+    if (media) {
+      var ph = slot.querySelector('.placeholder');
+      if (ph) ph.style.display = 'none';
+    }
+  });
+</script>
 </body>
 </html>
